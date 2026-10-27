@@ -67,10 +67,13 @@ public class LocacaoService {
     public void notificarAtrasos(){
         List<Locacao> locacoes = dao.obterLocacoesPendentes();
         for(Locacao locacao : locacoes){
-            emailService.notificarAtraso(locacao.getUsuario());
-
+            if(locacao.getDataRetorno().before(new Date())) {
+                emailService.notificarAtraso(locacao.getUsuario());
+            }
         }
     }
+
+
 
     /**
      * Desconto progressivo por quantidade de filmes na mesma locação:

@@ -149,6 +149,7 @@ public class LocacaoServiceTest {
     public void naoDeveAlugarFilmeParaNegativadoSPC() {
         // cenário
         Usuario usuario = umUsuario().agora();
+        Usuario usuario2 = umUsuario().comNome("Usuario 2").agora();
         List<Filme> filmes = Collections.singletonList(FilmeBuilder.umFilme().agora());
 
         when(spc.possuiNegativo(usuario)).thenReturn(true);
@@ -169,12 +170,12 @@ public class LocacaoServiceTest {
     public void deveEnviarEmailParaLocacoesAtrasadas(){
         //Cenario
         Usuario usuario = umUsuario().agora();
-        Usuario usuario2 = umUsuario().comNome("Usuario 2").agora();
+        Usuario usuario2 = umUsuario().comNome("Usuario em dia").agora();
+        Usuario usuario3 = umUsuario().comNome("Usuario atrasado").agora();
         List<Locacao> locacoes = Arrays.asList(
-                LocacaoBuilder.umaLocacao()
-                        .comUsuario(usuario)
-                        .comDataRetorno(obterDataComDiferencaDias(-2))
-                        .agora());
+                LocacaoBuilder.umaLocacao().atrasada().comUsuario(usuario).agora(),
+                LocacaoBuilder.umaLocacao().comUsuario(usuario2).agora(),
+                LocacaoBuilder.umaLocacao().atrasada().comUsuario(usuario3).agora());
         when(dao.obterLocacoesPendentes()).thenReturn(locacoes);
 
         //Acao
@@ -182,5 +183,7 @@ public class LocacaoServiceTest {
 
         //Verificacao
         Mockito.verify(email).notificarAtraso(usuario);
+        Mockito.verify(email).notificarAtraso(usuario3);
+        Mockito.verify(email, never()).notificarAtraso(usuario2);
     }
 }
