@@ -20,4 +20,11 @@ public class UsuarioBuilder {
         return usuario;
     }
 
+    public UsuarioBuilder comNome(String nome) {
+        UsuarioBuilder builder = new UsuarioBuilder();
+        builder.usuario = new Usuario();
+        builder.usuario.setNome(nome);
+        return  builder;
+
     }
+}

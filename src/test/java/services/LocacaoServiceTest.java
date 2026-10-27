@@ -1,11 +1,13 @@
 package services;
 
 import builders.FilmeBuilder;
+import builders.LocacaoBuilder;
 import builders.UsuarioBuilder;
 import org.example.daos.LocacaoDAO;
 import org.example.entities.Filme;
 import org.example.entities.Locacao;
 import org.example.entities.Usuario;
+import org.example.services.EmailService;
 import org.example.services.LocacaoService;
 import org.example.services.SPCService;
 import org.example.utils.DataUtils;
@@ -14,12 +16,15 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ErrorCollector;
+import org.mockito.Mockito;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
+import static builders.UsuarioBuilder.umUsuario;
+import static org.example.utils.DataUtils.obterDataComDiferencaDias;
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -31,6 +36,7 @@ public class LocacaoServiceTest {
     private LocacaoService service;
     private LocacaoDAO dao;
     private SPCService spc;
+    private EmailService email;
 
 
     @Rule
@@ -42,12 +48,14 @@ public class LocacaoServiceTest {
         spc = mock(SPCService.class);
         service = new LocacaoService(dao);
         service.setSpcService(spc);
+        email = Mockito.mock(EmailService.class);
+        service.setEmailService(email);
     }
 
     @Test
     public void deveAlugarFilme() throws Exception {
         // cenário
-        Usuario usuario = UsuarioBuilder.umUsuario().agora();
+        Usuario usuario = umUsuario().agora();
         List<Filme> filmes = Collections.singletonList(FilmeBuilder.umFilme().comValor(5.0).agora());
 
         // ação
@@ -56,12 +64,12 @@ public class LocacaoServiceTest {
         // verificação
         error.checkThat(locacao.getValor(), is(equalTo(5.0)));
         error.checkThat(DataUtils.isMesmaData(locacao.getDataLocacao(), new Date()), is(true));
-        error.checkThat(DataUtils.isMesmaData(locacao.getDataRetorno(), DataUtils.obterDataComDiferencaDias(1)), is(true));
+        error.checkThat(DataUtils.isMesmaData(locacao.getDataRetorno(), obterDataComDiferencaDias(1)), is(true));
     }
 
     @Test(expected = Exception.class)
     public void naoDeveAlugarFilmeSemEstoque_elegante() throws Exception {
-        Usuario usuario = UsuarioBuilder.umUsuario().agora();
+        Usuario usuario = umUsuario().agora();
         List<Filme> filmes = Collections.singletonList(FilmeBuilder.umFilme().semEstoque().agora());
 
         service.alugarFilme(usuario, filmes);
@@ -69,7 +77,7 @@ public class LocacaoServiceTest {
 
     @Test
     public void naoDeveAlugarFilmeSemEstoque_robusta() {
-        Usuario usuario = UsuarioBuilder.umUsuario().agora();
+        Usuario usuario = umUsuario().agora();
         List<Filme> filmes = Collections.singletonList(FilmeBuilder.umFilme().semEstoque().agora());
 
         try {
@@ -94,7 +102,7 @@ public class LocacaoServiceTest {
 
     @Test
     public void naoDeveAlugarSemFilme() {
-        Usuario usuario = UsuarioBuilder.umUsuario().agora();
+        Usuario usuario = umUsuario().agora();
 
         try {
             service.alugarFilme(usuario, Collections.<Filme>emptyList());
@@ -108,7 +116,7 @@ public class LocacaoServiceTest {
 
     @Test
     public void deveSalvarLocacaoNoDao() throws Exception {
-        Usuario usuario = UsuarioBuilder.umUsuario().agora();
+        Usuario usuario = umUsuario().agora();
         List<Filme> filmes = Arrays.asList(FilmeBuilder.umFilme().agora(), FilmeBuilder.umFilme().agora());
 
         Locacao locacao = service.alugarFilme(usuario, filmes);
@@ -118,7 +126,7 @@ public class LocacaoServiceTest {
 
     @Test
     public void naoDeveSalvarNoDaoQuandoFilmeSemEstoque() {
-        Usuario usuario = UsuarioBuilder.umUsuario().agora();
+        Usuario usuario = umUsuario().agora();
         List<Filme> filmes = Collections.singletonList(FilmeBuilder.umFilme().semEstoque().agora());
 
         try {
@@ -133,14 +141,14 @@ public class LocacaoServiceTest {
     public void semDaoInjetadoDeveEstourarNullPointer() throws Exception {
         // Mostra o problema do código original: sem DAO, salvar() estoura NPE
         LocacaoService serviceSemDao = new LocacaoService(null);
-        serviceSemDao.alugarFilme(UsuarioBuilder.umUsuario().agora(),
+        serviceSemDao.alugarFilme(umUsuario().agora(),
                 Collections.singletonList(FilmeBuilder.umFilme().agora()));
     }
 
     @Test
     public void naoDeveAlugarFilmeParaNegativadoSPC() {
         // cenário
-        Usuario usuario = UsuarioBuilder.umUsuario().agora();
+        Usuario usuario = umUsuario().agora();
         List<Filme> filmes = Collections.singletonList(FilmeBuilder.umFilme().agora());
 
         when(spc.possuiNegativo(usuario)).thenReturn(true);
@@ -155,5 +163,24 @@ public class LocacaoServiceTest {
         }
 
         verify(spc).possuiNegativo(usuario);
+    }
+
+    @Test
+    public void deveEnviarEmailParaLocacoesAtrasadas(){
+        //Cenario
+        Usuario usuario = umUsuario().agora();
+        Usuario usuario2 = umUsuario().comNome("Usuario 2").agora();
+        List<Locacao> locacoes = Arrays.asList(
+                LocacaoBuilder.umaLocacao()
+                        .comUsuario(usuario)
+                        .comDataRetorno(obterDataComDiferencaDias(-2))
+                        .agora());
+        when(dao.obterLocacoesPendentes()).thenReturn(locacoes);
+
+        //Acao
+        service.notificarAtrasos();
+
+        //Verificacao
+        Mockito.verify(email).notificarAtraso(usuario);
     }
 }

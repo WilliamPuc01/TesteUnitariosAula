@@ -14,6 +14,7 @@ public class LocacaoService {
 
     private LocacaoDAO dao;
     private SPCService spcService;
+    private  EmailService emailService;
 
     // O DAO é injetado: em produção vem a implementação real (banco),
     // nos testes vem um DAO falso. Assim o serviço não depende do banco.
@@ -55,8 +56,20 @@ public class LocacaoService {
         return locacao;
     }
 
+    public void setEmailService(EmailService email){
+        emailService = email;
+    }
+
     public void setSpcService(SPCService spc){
         spcService = spc;
+    }
+
+    public void notificarAtrasos(){
+        List<Locacao> locacoes = dao.obterLocacoesPendentes();
+        for(Locacao locacao : locacoes){
+            emailService.notificarAtraso(locacao.getUsuario());
+
+        }
     }
 
     /**

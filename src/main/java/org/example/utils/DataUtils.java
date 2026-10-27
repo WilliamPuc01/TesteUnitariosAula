@@ -29,6 +29,7 @@ public class DataUtils {
      * @return Data atualizada
      */
     public static Date obterDataComDiferencaDias(int dias) {
+
         return adicionarDias(new Date(), dias);
     }
 

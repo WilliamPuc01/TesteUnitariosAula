@@ -26,4 +26,7 @@ public class LocacaoDAOFake implements LocacaoDAO {
     public int quantidadeSalva() {
         return salvas.size();
     }
+    public List<Locacao> obterLocacoesPendentes(){
+        return null;
+    }
 }
