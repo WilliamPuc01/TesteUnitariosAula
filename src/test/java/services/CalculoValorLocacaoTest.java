@@ -3,9 +3,9 @@ package services;
 import builders.FilmeBuilder;
 import builders.UsuarioBuilder;
 import org.example.daos.LocacaoDAO;
-import org.example.daos.LocacaoDAOFake;
 import org.example.entities.Filme;
 import org.example.entities.Locacao;
+import org.example.services.EmailService;
 import org.example.services.LocacaoService;
 import org.example.services.SPCService;
 import org.junit.Before;
@@ -14,7 +14,10 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -40,15 +43,21 @@ public class CalculoValorLocacaoTest {
     @Parameter(2)
     public String cenario;
 
+    @InjectMocks
     private LocacaoService service;
+
+    @Mock
+    private LocacaoDAO dao;
+
+    @Mock
+    private SPCService spc;
+
+    @Mock
+    private EmailService email;
 
     @Before
     public void setup() {
-        service = new LocacaoService(new LocacaoDAOFake());
-        LocacaoDAO dao = Mockito.mock(LocacaoDAO.class);
-        service.setLocacaoDAO(dao);
-        SPCService spc = Mockito.mock(SPCService.class);
-        service.setSpcService(spc);
+        MockitoAnnotations.initMocks(this);
     }
 
     @Parameters(name = "{2}")

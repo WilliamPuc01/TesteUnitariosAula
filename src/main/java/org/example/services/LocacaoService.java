@@ -18,8 +18,10 @@ public class LocacaoService {
 
     // O DAO é injetado: em produção vem a implementação real (banco),
     // nos testes vem um DAO falso. Assim o serviço não depende do banco.
-    public LocacaoService(LocacaoDAO dao) {
+    public LocacaoService(LocacaoDAO dao, SPCService spcService, EmailService emailService) {
         this.dao = dao;
+        this.spcService = spcService;
+        this.emailService = emailService;
     }
 
     public void setLocacaoDAO(LocacaoDAO dao) {

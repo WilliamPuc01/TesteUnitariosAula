@@ -16,7 +16,10 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ErrorCollector;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -33,9 +36,13 @@ import static org.mockito.Mockito.*;
 
 public class LocacaoServiceTest {
 
+    @InjectMocks
     private LocacaoService service;
+    @Mock
     private LocacaoDAO dao;
+    @Mock
     private SPCService spc;
+    @Mock
     private EmailService email;
 
 
@@ -44,12 +51,7 @@ public class LocacaoServiceTest {
 
     @Before
     public void setup() {
-        dao = mock(LocacaoDAO.class);
-        spc = mock(SPCService.class);
-        service = new LocacaoService(dao);
-        service.setSpcService(spc);
-        email = Mockito.mock(EmailService.class);
-        service.setEmailService(email);
+        MockitoAnnotations.initMocks(this);
     }
 
     @Test
@@ -140,7 +142,7 @@ public class LocacaoServiceTest {
     @Test(expected = NullPointerException.class)
     public void semDaoInjetadoDeveEstourarNullPointer() throws Exception {
         // Mostra o problema do código original: sem DAO, salvar() estoura NPE
-        LocacaoService serviceSemDao = new LocacaoService(null);
+        LocacaoService serviceSemDao = new LocacaoService(null, spc, email);
         serviceSemDao.alugarFilme(umUsuario().agora(),
                 Collections.singletonList(FilmeBuilder.umFilme().agora()));
     }
@@ -152,7 +154,7 @@ public class LocacaoServiceTest {
         Usuario usuario2 = umUsuario().comNome("Usuario 2").agora();
         List<Filme> filmes = Collections.singletonList(FilmeBuilder.umFilme().agora());
 
-        when(spc.possuiNegativo(usuario)).thenReturn(true);
+        when(spc.possuiNegativo(Mockito.any(Usuario.class))).thenReturn(true);
 
         // ação
         try {
