@@ -2,16 +2,19 @@ package services;
 
 import builders.FilmeBuilder;
 import builders.UsuarioBuilder;
+import org.example.daos.LocacaoDAO;
 import org.example.daos.LocacaoDAOFake;
 import org.example.entities.Filme;
 import org.example.entities.Locacao;
 import org.example.services.LocacaoService;
+import org.example.services.SPCService;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
+import org.mockito.Mockito;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,6 +45,10 @@ public class CalculoValorLocacaoTest {
     @Before
     public void setup() {
         service = new LocacaoService(new LocacaoDAOFake());
+        LocacaoDAO dao = Mockito.mock(LocacaoDAO.class);
+        service.setLocacaoDAO(dao);
+        SPCService spc = Mockito.mock(SPCService.class);
+        service.setSpcService(spc);
     }
 
     @Parameters(name = "{2}")

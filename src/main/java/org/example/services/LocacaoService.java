@@ -13,6 +13,7 @@ import static org.example.utils.DataUtils.adicionarDias;
 public class LocacaoService {
 
     private LocacaoDAO dao;
+    private SPCService spcService;
 
     // O DAO é injetado: em produção vem a implementação real (banco),
     // nos testes vem um DAO falso. Assim o serviço não depende do banco.
@@ -28,6 +29,9 @@ public class LocacaoService {
 
         if (usuario == null) throw new Exception("Usuario vazio");
         if (filmes == null || filmes.isEmpty()) throw new Exception("Filme vazio");
+        if(spcService.possuiNegativo(usuario)){
+            throw new Exception("Usuario Negativado");
+        }
 
         for (Filme filme : filmes) {
             if (filme.getEstoque() == null || filme.getEstoque() == 0) {
@@ -49,6 +53,10 @@ public class LocacaoService {
         dao.salvar(locacao);
 
         return locacao;
+    }
+
+    public void setSpcService(SPCService spc){
+        spcService = spc;
     }
 
     /**

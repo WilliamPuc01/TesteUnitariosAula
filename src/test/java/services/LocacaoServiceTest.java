@@ -2,11 +2,12 @@ package services;
 
 import builders.FilmeBuilder;
 import builders.UsuarioBuilder;
-import org.example.daos.LocacaoDAOFake;
+import org.example.daos.LocacaoDAO;
 import org.example.entities.Filme;
 import org.example.entities.Locacao;
 import org.example.entities.Usuario;
 import org.example.services.LocacaoService;
+import org.example.services.SPCService;
 import org.example.utils.DataUtils;
 import org.junit.Assert;
 import org.junit.Before;
@@ -20,20 +21,27 @@ import java.util.Date;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 
 public class LocacaoServiceTest {
 
     private LocacaoService service;
-    private LocacaoDAOFake dao;
+    private LocacaoDAO dao;
+    private SPCService spc;
+
 
     @Rule
     public ErrorCollector error = new ErrorCollector();
 
     @Before
     public void setup() {
-        dao = new LocacaoDAOFake();
+        dao = mock(LocacaoDAO.class);
+        spc = mock(SPCService.class);
         service = new LocacaoService(dao);
+        service.setSpcService(spc);
     }
 
     @Test
@@ -105,8 +113,7 @@ public class LocacaoServiceTest {
 
         Locacao locacao = service.alugarFilme(usuario, filmes);
 
-        assertThat(dao.quantidadeSalva(), is(1));
-        assertThat(dao.getSalvas().get(0), is(sameInstance(locacao)));
+        verify(dao, times(1)).salvar(locacao);
     }
 
     @Test
@@ -119,7 +126,7 @@ public class LocacaoServiceTest {
         } catch (Exception ignored) {
         }
 
-        assertThat(dao.quantidadeSalva(), is(0));
+        verify(dao, never()).salvar(any(Locacao.class));
     }
 
     @Test(expected = NullPointerException.class)
@@ -128,5 +135,25 @@ public class LocacaoServiceTest {
         LocacaoService serviceSemDao = new LocacaoService(null);
         serviceSemDao.alugarFilme(UsuarioBuilder.umUsuario().agora(),
                 Collections.singletonList(FilmeBuilder.umFilme().agora()));
+    }
+
+    @Test
+    public void naoDeveAlugarFilmeParaNegativadoSPC() {
+        // cenário
+        Usuario usuario = UsuarioBuilder.umUsuario().agora();
+        List<Filme> filmes = Collections.singletonList(FilmeBuilder.umFilme().agora());
+
+        when(spc.possuiNegativo(usuario)).thenReturn(true);
+
+        // ação
+        try {
+            service.alugarFilme(usuario, filmes);
+            Assert.fail("Deveria lançar exceção");
+        } catch (Exception e) {
+            // verificação
+            assertThat(e.getMessage(), is("Usuario Negativado"));
+        }
+
+        verify(spc).possuiNegativo(usuario);
     }
 }
